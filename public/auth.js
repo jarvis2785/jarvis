@@ -226,7 +226,7 @@ function showOnboarding(userId, email) {
   onboardingActive = true; 
   const authScreen = document.getElementById("authScreen");
   if (authScreen) authScreen.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:20px;">
       <div style="background:#1a1a2e;border-radius:16px;padding:32px;width:100%;max-width:400px;">
         <h2 style="color:#fff;font-size:24px;font-weight:700;margin-bottom:8px;text-align:center;">One Last Step</h2>
         <p style="color:#888;font-size:14px;text-align:center;margin-bottom:24px;">Tell Jarvis who you are</p>
