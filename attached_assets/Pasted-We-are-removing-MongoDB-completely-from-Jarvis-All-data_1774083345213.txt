@@ -1,0 +1,70 @@
+We are removing MongoDB completely from Jarvis.
+All data storage must be migrated to Supabase only.
+At the same time fix the "User not found. Please log in again" error.
+
+The root cause of the user not found error:
+The backend was calling .replace(/\D/g, '') on Supabase UUIDs 
+which contain hyphens and letters — turning them into garbage 
+strings that never matched any database record.
+
+Fix everything together:
+
+PART 1 — Remove MongoDB completely:
+1. Delete all MongoDB/Mongoose code and dependencies
+2. Remove MONGO_URI from everywhere
+3. Remove all .replace(/\D/g, '') patterns entirely
+
+PART 2 — Create Supabase tables automatically:
+On app startup, run this SQL via Supabase client to create 
+tables if they don't exist:
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT,
+  profession TEXT,
+  interests TEXT,
+  likes TEXT,
+  dislikes TEXT,
+  communication_style TEXT,
+  response_length TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS chats (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  message TEXT,
+  role TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS memories (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  content TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+PART 3 — Fix user identification:
+1. Always get current user from Supabase session:
+   const { data: { user } } = await supabase.auth.getUser()
+2. Use user.id (Supabase UUID) as identifier everywhere
+3. Never modify or strip the UUID — use it as-is
+4. On first login auto-create the user profile in Supabase
+   profiles table if it doesn't exist yet
+5. Profile save must upsert — create if not exists,
+   update if exists — never return user not found
+
+PART 4 — Use Supabase for all data operations:
+Replace every MongoDB read/write with Supabase queries:
+- Profile get/save → profiles table
+- Chat history → chats table  
+- Memories → memories table
+
+After all this:
+- Zero MongoDB code anywhere
+- All tables created automatically on startup
+- Profile saving works end to end
+- No "User not found" error ever
